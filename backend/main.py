@@ -25,6 +25,7 @@ app.add_middleware(
         "http://localhost:3002",
         "https://sadaksathi.vercel.app",
         "https://*.vercel.app",
+        "https://sadaksathi-production.up.railway.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
