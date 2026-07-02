@@ -5,7 +5,7 @@ backend/venv/
 # Environment files (contain secrets)
 backend/.env
 frontend/.env.local
-frontend/.env.production
+# Note: .env.production is committed (contains only public Railway URL)
 
 # Build output
 frontend/dist/
