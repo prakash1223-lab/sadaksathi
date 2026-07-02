@@ -64,7 +64,7 @@ https://sadaksathi.vercel.app
 
 Built by Prakash Bhandari 
 Computer Engineering Student - 6th Semester  
-[Your College Name], Nepal
+kantipur Engineering college, Nepal
 
 ---
 
