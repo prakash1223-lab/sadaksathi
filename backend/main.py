@@ -57,13 +57,20 @@ app.include_router(settings_router, prefix="/api")
 @app.on_event("startup")
 async def startup():
     """Create DB tables and print startup info."""
-    Base.metadata.create_all(bind=engine)
-    print("=" * 50)
-    print("🛣️  SadakSathi API started!")
-    print(f"   Database: {settings.DATABASE_URL[:50]}...")
-    print(f"   Upload dir: {settings.UPLOAD_DIR}")
-    print("   Database tables: OK")
-    print("=" * 50)
+    try:
+        Base.metadata.create_all(bind=engine)
+        print("=" * 50)
+        print("🛣️  SadakSathi API started!")
+        db_display = settings.DATABASE_URL[:30] + "..." if len(settings.DATABASE_URL) > 30 else settings.DATABASE_URL
+        print(f"   Database: {db_display}")
+        print(f"   Upload dir: {settings.UPLOAD_DIR}")
+        print("   Database tables: OK")
+        print("=" * 50)
+    except Exception as e:
+        print(f"❌ STARTUP ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+        raise
 
 
 @app.get("/", tags=["root"])
