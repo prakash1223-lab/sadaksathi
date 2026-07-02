@@ -1,0 +1,16 @@
+import api from './client'
+
+export const getSettings         = ()         => api.get('/settings')
+export const getProfile          = ()         => api.get('/settings/profile')
+export const updateProfile       = (data)     => api.patch('/settings/profile', data)
+export const updatePassword      = (data)     => api.patch('/settings/password', data)
+export const updateNotifications = (data)     => api.patch('/settings/notifications', data)
+export const updateMap           = (data)     => api.patch('/settings/map', data)
+export const updateReporting     = (data)     => api.patch('/settings/reporting', data)
+export const updatePrivacy       = (data)     => api.patch('/settings/privacy', data)
+export const updateAccount       = (data)     => api.patch('/settings/account', data)
+export const getContributions    = ()         => api.get('/settings/contributions')
+export const exportReports       = (format)   => api.get(`/settings/export?format=${format}`, { responseType: 'blob' })
+export const deleteAccount       = (password) => api.delete('/settings/account', { data: { password } })
+export const getSosContacts      = ()         => api.get('/settings/sos-contacts')
+export const addSosContact       = (data)     => api.post('/settings/sos-contacts', data)

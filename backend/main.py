@@ -1,0 +1,75 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+import os
+
+# Set timezone to Nepal for any OS-level datetime operations
+os.environ.setdefault('TZ', 'Asia/Kathmandu')
+
+from core.database import engine, Base
+from core.config import settings
+import models  # registers all models with Base
+
+# Create all DB tables on startup
+Base.metadata.create_all(bind=engine)
+
+app = FastAPI(title="SadakSathi API", version="1.0.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:3002",
+        "https://sadaksathi.vercel.app",
+        "https://*.vercel.app",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Serve uploaded photos as static files
+os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
+
+from routes.auth import router as auth_router
+from routes.reports import router as reports_router
+from routes.users import router as users_router
+from routes.ai import router as ai_router
+from routes.admin import router as admin_router
+from routes.notifications import router as notif_router
+from routes.settings import router as settings_router
+
+app.include_router(auth_router, prefix="/api")
+app.include_router(reports_router, prefix="/api")
+app.include_router(users_router, prefix="/api")
+app.include_router(ai_router, prefix="/api")
+app.include_router(admin_router, prefix="/api")
+app.include_router(notif_router, prefix="/api")
+app.include_router(settings_router, prefix="/api")
+
+@app.get("/api/stats", tags=["public"])
+def get_stats(db=None):
+    """Public stats for landing page."""
+    from core.database import SessionLocal
+    from models.report import Report, StatusEnum
+    from models.user import User
+    _db = SessionLocal()
+    try:
+        total   = _db.query(Report).count()
+        fixed   = _db.query(Report).filter(Report.status == StatusEnum.fixed).count()
+        pending = _db.query(Report).filter(Report.status == StatusEnum.pending).count()
+        users   = _db.query(User).count()
+        return {"total_reports": total, "active_users": users, "fixed_roads": fixed, "pending_reports": pending}
+    finally:
+        _db.close()
+
+@app.get("/")
+def root():
+    return {"message": "SadakSathi API is running 🛣️"}
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}

@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Leaflet z-index fix inside modals */
+.leaflet-container {
+  z-index: 1;
+}
+
