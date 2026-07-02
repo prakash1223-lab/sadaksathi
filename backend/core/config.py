@@ -19,7 +19,24 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: str = ""
     GEMINI_API_KEY: str = ""
 
-    model_config = {"env_file": _ENV_FILE, "env_file_encoding": "utf-8"}
+    model_config = {"env_file": _ENV_FILE, "env_file_encoding": "utf-8", "extra": "ignore"}
+
+    @property
+    def gemini_key(self) -> str:
+        """Always read from live env var first, then .env file value."""
+        live = os.environ.get("GEMINI_API_KEY", "").strip()
+        if live:
+            return live
+        # Re-read .env file directly in case it changed after startup
+        try:
+            with open(_ENV_FILE) as f:
+                for line in f:
+                    line = line.strip()
+                    if line.startswith("GEMINI_API_KEY="):
+                        return line.split("=", 1)[1].strip()
+        except Exception:
+            pass
+        return self.GEMINI_API_KEY
 
 
 settings = Settings()

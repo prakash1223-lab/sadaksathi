@@ -548,8 +548,14 @@ export default function ReportForm() {
                   <div className="flex items-center gap-3 mb-4">
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg ${aiApplied ? 'bg-green-200' : 'bg-blue-200'}`}>🤖</div>
                     <div>
-                      <p className="text-sm font-bold text-gray-900">AI Detection Result</p>
-                      <p className="text-[11px] text-gray-500">{aiApplied ? 'Applied to your report' : 'Review before applying'}</p>
+                      <p className="text-sm font-bold text-gray-900">
+                        {aiResult._fallback ? 'Basic Analysis Result' : 'AI Detection Result'}
+                      </p>
+                      <p className="text-[11px] text-gray-500">
+                        {aiResult._fallback
+                          ? '⚠️ Gemini unavailable — suggestion only'
+                          : aiApplied ? 'Applied to your report' : 'Review before applying'}
+                      </p>
                     </div>
                   </div>
 

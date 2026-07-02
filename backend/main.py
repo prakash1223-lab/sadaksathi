@@ -86,6 +86,26 @@ def health():
     }
 
 
+@app.post("/api/setup-admin", tags=["setup"])
+def setup_admin(secret: str = "sadaksathi-setup-2024"):
+    """One-time endpoint to promote first user to admin. Remove after use."""
+    if secret != "sadaksathi-setup-2024":
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail="Wrong secret")
+    from core.database import SessionLocal
+    from models.user import User
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.phone == "9800000000").first()
+        if not user:
+            return {"error": "User 9800000000 not found"}
+        user.is_admin = True
+        db.commit()
+        return {"ok": True, "message": f"User {user.name} ({user.phone}) is now admin"}
+    finally:
+        db.close()
+
+
 @app.get("/api/stats", tags=["public"])
 def get_stats():
     """Public stats for landing page."""
