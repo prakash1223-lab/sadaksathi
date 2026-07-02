@@ -58,7 +58,7 @@ npm run dev
 
 ## 🌍 Live Demo
 
-- **Frontend:** https://sadaksathi.vercel.app
+- **Frontend:** https://sadaksathi-v1k9-three.vercel.app
 - **Backend API:** https://sadaksathi-production.up.railway.app
 - **API Docs:** https://sadaksathi-production.up.railway.app/docs
 
