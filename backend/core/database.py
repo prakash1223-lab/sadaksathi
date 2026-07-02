@@ -1,5 +1,5 @@
 import os
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from .config import settings
@@ -13,8 +13,18 @@ if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
 connect_args = {}
 if "sqlite" in DATABASE_URL:
     connect_args = {"check_same_thread": False}
+    engine = create_engine(DATABASE_URL, connect_args=connect_args)
+else:
+    # PostgreSQL — add connection pool settings for Railway
+    engine = create_engine(
+        DATABASE_URL,
+        pool_pre_ping=True,       # test connection before using from pool
+        pool_recycle=300,         # recycle connections every 5 min
+        pool_size=5,
+        max_overflow=10,
+        connect_args={"connect_timeout": 10},
+    )
 
-engine = create_engine(DATABASE_URL, connect_args=connect_args)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
