@@ -1,22 +1,26 @@
 import os
 from pydantic_settings import BaseSettings
 
-# Always resolve paths relative to the backend/ directory, regardless of cwd
 _BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _ENV_FILE    = os.path.join(_BACKEND_DIR, ".env")
-_DB_PATH     = os.path.join(_BACKEND_DIR, "sadaksathi.db")
-_UPLOAD_DIR  = os.path.join(_BACKEND_DIR, "uploads")
+
+# Use /tmp on Railway (read-only filesystem), local path otherwise
+_IS_RAILWAY = os.environ.get("RAILWAY_ENVIRONMENT") is not None
+_DEFAULT_DB  = "sqlite:///./sadaksathi.db" if _IS_RAILWAY else f"sqlite:///{os.path.join(_BACKEND_DIR, 'sadaksathi.db')}"
+_DEFAULT_UPLOAD = "/tmp/uploads" if _IS_RAILWAY else os.path.join(_BACKEND_DIR, "uploads")
+
 
 class Settings(BaseSettings):
-    DATABASE_URL: str = f"sqlite:///{_DB_PATH}"
+    DATABASE_URL: str = _DEFAULT_DB
     SECRET_KEY: str = "change-this-secret-key-in-production"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
-    UPLOAD_DIR: str = _UPLOAD_DIR
+    UPLOAD_DIR: str = _DEFAULT_UPLOAD
     ANTHROPIC_API_KEY: str = ""
     GEMINI_API_KEY: str = ""
 
     model_config = {"env_file": _ENV_FILE, "env_file_encoding": "utf-8"}
+
 
 settings = Settings()
 

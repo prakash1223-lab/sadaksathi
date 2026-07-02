@@ -3,17 +3,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import os
 
-# Set timezone to Nepal for any OS-level datetime operations
+# Nepal timezone
 os.environ.setdefault('TZ', 'Asia/Kathmandu')
 
 from core.database import engine, Base
 from core.config import settings
 import models  # registers all models with Base
 
-# Create all DB tables on startup
-Base.metadata.create_all(bind=engine)
-
-app = FastAPI(title="SadakSathi API", version="1.0.0")
+app = FastAPI(
+    title="SadakSathi API",
+    description="Road Quality Reporting System for Nepal 🇳🇵",
+    version="1.0.0",
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -50,26 +51,56 @@ app.include_router(admin_router, prefix="/api")
 app.include_router(notif_router, prefix="/api")
 app.include_router(settings_router, prefix="/api")
 
+
+@app.on_event("startup")
+async def startup():
+    """Create DB tables and print startup info."""
+    Base.metadata.create_all(bind=engine)
+    print("=" * 50)
+    print("🛣️  SadakSathi API started!")
+    print(f"   Database: {settings.DATABASE_URL[:50]}...")
+    print(f"   Upload dir: {settings.UPLOAD_DIR}")
+    print("   Database tables: OK")
+    print("=" * 50)
+
+
+@app.get("/", tags=["root"])
+def root():
+    return {
+        "app": "SadakSathi API",
+        "version": "1.0.0",
+        "message": "Road Quality Reporting System for Nepal 🇳🇵",
+        "docs": "/docs",
+        "health": "/health",
+    }
+
+
+@app.get("/health", tags=["health"])
+def health():
+    return {
+        "status": "healthy",
+        "app": "SadakSathi API",
+        "version": "1.0.0",
+    }
+
+
 @app.get("/api/stats", tags=["public"])
-def get_stats(db=None):
+def get_stats():
     """Public stats for landing page."""
     from core.database import SessionLocal
     from models.report import Report, StatusEnum
     from models.user import User
-    _db = SessionLocal()
+    db = SessionLocal()
     try:
-        total   = _db.query(Report).count()
-        fixed   = _db.query(Report).filter(Report.status == StatusEnum.fixed).count()
-        pending = _db.query(Report).filter(Report.status == StatusEnum.pending).count()
-        users   = _db.query(User).count()
-        return {"total_reports": total, "active_users": users, "fixed_roads": fixed, "pending_reports": pending}
+        total   = db.query(Report).count()
+        fixed   = db.query(Report).filter(Report.status == StatusEnum.fixed).count()
+        pending = db.query(Report).filter(Report.status == StatusEnum.pending).count()
+        users   = db.query(User).count()
+        return {
+            "total_reports": total,
+            "active_users": users,
+            "fixed_roads": fixed,
+            "pending_reports": pending,
+        }
     finally:
-        _db.close()
-
-@app.get("/")
-def root():
-    return {"message": "SadakSathi API is running 🛣️"}
-
-@app.get("/health")
-def health():
-    return {"status": "ok"}
+        db.close()
