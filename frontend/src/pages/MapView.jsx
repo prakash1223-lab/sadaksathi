@@ -227,8 +227,9 @@ function NotifBell() {
           )}
         </button>
         {open && (
-          <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-[2000]">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50">
+          <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-[2000]"
+            style={{maxHeight:'calc(100vh - 120px)', overflowY:'auto'}}>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50 sticky top-0">
               <p className="font-bold text-gray-900 text-sm">Notifications</p>
               {unread>0 && (
                 <button onClick={async()=>{await markAllRead();setNotifs(p=>p.map(n=>({...n,is_read:true})));setUnread(0)}}
@@ -237,7 +238,7 @@ function NotifBell() {
                 </button>
               )}
             </div>
-            <div className="max-h-72 overflow-y-auto divide-y divide-gray-50">
+            <div className="max-h-64 overflow-y-auto divide-y divide-gray-50">
               {notifs.length===0
                 ? <div className="text-center py-8 text-gray-400 text-sm">No notifications</div>
                 : notifs.map(n => (
@@ -392,8 +393,9 @@ export default function MapView() {
 
           <div className="flex items-center gap-2 ml-auto">
             <button onClick={()=>navigate(isLoggedIn?'/report/new':'/login')}
-              className="flex items-center gap-1.5 bg-white text-red-600 font-bold text-xs px-4 py-2 rounded-xl hover:bg-red-50 transition-colors shadow-sm whitespace-nowrap">
-              + Report Problem
+              className="flex items-center gap-1.5 bg-white text-red-600 font-bold text-xs px-3 py-2 rounded-xl hover:bg-red-50 transition-colors shadow-sm whitespace-nowrap">
+              <span className="hidden sm:inline">+ Report Problem</span>
+              <span className="sm:hidden">+ Report</span>
             </button>
 
             {user && <NotifBell/>}
@@ -401,18 +403,19 @@ export default function MapView() {
             {user ? (
               <div className="relative" ref={ddRef}>
                 <button onClick={()=>setDd(o=>!o)}
-                  className="flex items-center gap-1.5 rounded-xl hover:bg-white/10 transition-colors px-2 py-1.5">
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm"
+                  className="flex items-center gap-1 rounded-xl hover:bg-white/10 transition-colors px-1.5 py-1.5">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm shrink-0"
                     style={{background:avatarCol(user.name)}}>
                     {initials(user.name)}
                   </div>
-                  <svg className={`w-3.5 h-3.5 opacity-70 transition-transform ${ddOpen?'rotate-180':''}`}
+                  <svg className={`w-3 h-3 opacity-70 transition-transform hidden sm:block ${ddOpen?'rotate-180':''}`}
                     fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/>
                   </svg>
                 </button>
                 {ddOpen && (
-                  <div className="dd-anim absolute right-0 top-full mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-[2000]">
+                  <div className="dd-anim absolute right-0 top-full mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-[2000]"
+                    style={{maxHeight:'calc(100vh - 120px)', overflowY:'auto'}}>
                     {[
                       { label:'Profile',  fn:()=>{setDd(false);navigate('/profile')},
                         icon:<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg> },
@@ -632,14 +635,14 @@ export default function MapView() {
           {/* ── View Toggle (Pins / Heat) ── */}
           <div className="absolute top-3 left-3 z-[400] flex bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
             <button onClick={()=>switchView('pins')}
-              className={`view-btn flex items-center gap-1.5 px-4 py-2 text-xs font-semibold transition-all
+              className={`view-btn flex items-center gap-1 px-3 py-2 text-xs font-semibold transition-all
                 ${view==='pins' ? 'bg-red-600 text-white' : 'text-gray-500 hover:bg-gray-50'}`}>
-              📍 Pins
+              📍 <span className="hidden sm:inline">Pins</span>
             </button>
             <button onClick={()=>switchView('heat')}
-              className={`view-btn flex items-center gap-1.5 px-4 py-2 text-xs font-semibold transition-all
+              className={`view-btn flex items-center gap-1 px-3 py-2 text-xs font-semibold transition-all
                 ${view==='heat' ? 'bg-red-600 text-white' : 'text-gray-500 hover:bg-gray-50'}`}>
-              🔥 Heatmap
+              🔥 <span className="hidden sm:inline">Heatmap</span>
             </button>
           </div>
 
