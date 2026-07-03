@@ -53,52 +53,55 @@ class ReportUpdate(BaseModel):
 
 async def _save_upload(photo: UploadFile) -> tuple[str, str]:
     """
-    Save uploaded file.
-    - If Cloudinary is configured: upload there, return (cloudinary_url, tmp_path).
-    - Otherwise: save locally, return (/uploads/filename, local_path).
-    The second return value is always a local tmp path usable by the AI classifier.
+    Save uploaded photo.
+    - Reads the file into memory.
+    - Writes a temp copy to UPLOAD_DIR so the AI classifier can read it.
+    - Returns (data_url, tmp_path).
+      The data_url is a base64-encoded inline URL that works on any host
+      without a filesystem dependency, so images survive Railway redeploys.
     """
-    import tempfile
+    import base64, tempfile, io
+    from PIL import Image as PILImage
 
-    ext      = os.path.splitext(photo.filename)[1].lower() or ".jpg"
-    filename = f"{uuid.uuid4()}{ext}"
     contents = await photo.read()
+    ext = (os.path.splitext(photo.filename)[1] or ".jpg").lower().lstrip(".")
+    mime = {
+        "jpg": "image/jpeg", "jpeg": "image/jpeg",
+        "png": "image/png", "webp": "image/webp",
+        "gif": "image/gif", "heic": "image/heic",
+    }.get(ext, "image/jpeg")
 
-    # Always write to a temp file so the AI classifier can read it
+    # Resize large images before storing to keep DB rows small (max 800px wide)
+    try:
+        img = PILImage.open(io.BytesIO(contents))
+        if img.mode in ("RGBA", "P"):
+            img = img.convert("RGB")
+        if img.width > 800:
+            ratio = 800 / img.width
+            img = img.resize((800, int(img.height * ratio)), PILImage.LANCZOS)
+        buf = io.BytesIO()
+        img.save(buf, format="JPEG", quality=82)
+        contents = buf.getvalue()
+        mime = "image/jpeg"
+        ext = "jpg"
+    except Exception as e:
+        print(f"[Upload] PIL resize failed (using original): {e}")
+
+    # Write tmp file for AI classifier
+    filename = f"{uuid.uuid4()}.{ext}"
     tmp_path = os.path.join(tempfile.gettempdir(), filename)
     with open(tmp_path, "wb") as f:
         f.write(contents)
 
-    if settings.use_cloudinary:
-        try:
-            import cloudinary
-            import cloudinary.uploader
-
-            cloudinary.config(
-                cloud_name  = settings.CLOUDINARY_CLOUD_NAME,
-                api_key     = settings.CLOUDINARY_API_KEY,
-                api_secret  = settings.CLOUDINARY_API_SECRET,
-                secure      = True,
-            )
-            result = cloudinary.uploader.upload(
-                tmp_path,
-                folder          = "sadaksathi",
-                resource_type   = "image",
-                # Serve via HTTPS, auto-format + quality for speed
-                transformation  = [{"quality": "auto", "fetch_format": "auto"}],
-            )
-            photo_url = result["secure_url"]
-            print(f"[Cloudinary] Uploaded: {photo_url}")
-            return photo_url, tmp_path
-        except Exception as e:
-            print(f"[Cloudinary] Upload failed, falling back to local: {e}")
-
-    # Local fallback
-    local_path = os.path.join(settings.UPLOAD_DIR, filename)
+    # Also write to UPLOAD_DIR as fallback (local dev)
     os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+    local_path = os.path.join(settings.UPLOAD_DIR, filename)
     with open(local_path, "wb") as f:
         f.write(contents)
-    return f"/uploads/{filename}", local_path
+
+    b64 = base64.b64encode(contents).decode("utf-8")
+    data_url = f"data:{mime};base64,{b64}"
+    return data_url, tmp_path
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────

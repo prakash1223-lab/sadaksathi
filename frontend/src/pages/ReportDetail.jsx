@@ -221,7 +221,11 @@ export default function ReportDetail() {
         {report.photo_url && (
           <div className="relative rounded-2xl overflow-hidden mb-5 shadow-md" style={{height:260}}>
             <img
-              src={report.photo_url.startsWith('http') ? report.photo_url : `${API_BASE}${report.photo_url}`}
+              src={
+                report.photo_url.startsWith('data:') || report.photo_url.startsWith('http')
+                  ? report.photo_url
+                  : `${API_BASE}${report.photo_url}`
+              }
               alt={report.title}
               className="w-full h-full object-cover"
               onError={e => {

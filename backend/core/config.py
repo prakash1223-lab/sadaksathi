@@ -19,16 +19,7 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: str = ""
     GEMINI_API_KEY: str = ""
 
-    # Cloudinary — set all three in Railway env vars to enable cloud storage
-    CLOUDINARY_CLOUD_NAME: str = ""
-    CLOUDINARY_API_KEY: str = ""
-    CLOUDINARY_API_SECRET: str = ""
-
     model_config = {"env_file": _ENV_FILE, "env_file_encoding": "utf-8", "extra": "ignore"}
-
-    @property
-    def use_cloudinary(self) -> bool:
-        return bool(self.CLOUDINARY_CLOUD_NAME and self.CLOUDINARY_API_KEY and self.CLOUDINARY_API_SECRET)
 
     @property
     def gemini_key(self) -> str:
