@@ -54,6 +54,8 @@ class User(Base):
     account_language = Column(String, default="en")
     account_theme    = Column(String, default="system")
 
-    reports       = relationship("Report",          back_populates="reporter")
-    notifications = relationship("Notification",    back_populates="user")
-    sos_contacts  = relationship("CustomSosContact",back_populates="user")
+    reports       = relationship("Report",           back_populates="reporter")
+    notifications = relationship("Notification",     back_populates="user")
+    sos_contacts  = relationship("CustomSosContact", back_populates="user")
+    comments      = relationship("Comment",          back_populates="user")
+    reviews       = relationship("Review",           back_populates="user")

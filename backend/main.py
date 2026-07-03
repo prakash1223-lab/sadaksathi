@@ -45,6 +45,7 @@ from routes.ai import router as ai_router
 from routes.admin import router as admin_router
 from routes.notifications import router as notif_router
 from routes.settings import router as settings_router
+from routes.comments import router as comments_router
 
 app.include_router(auth_router, prefix="/api")
 app.include_router(reports_router, prefix="/api")
@@ -53,6 +54,7 @@ app.include_router(ai_router, prefix="/api")
 app.include_router(admin_router, prefix="/api")
 app.include_router(notif_router, prefix="/api")
 app.include_router(settings_router, prefix="/api")
+app.include_router(comments_router, prefix="/api")
 
 
 @app.on_event("startup")

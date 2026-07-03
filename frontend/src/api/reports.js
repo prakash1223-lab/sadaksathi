@@ -20,3 +20,13 @@ export const analyzePhoto = (file) => {
   fd.append('photo', file)
   return api.post('/ai/analyze', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
 }
+
+// ── Comments ──────────────────────────────────────────────────────────────────
+export const getComments  = (reportId)          => api.get(`/reports/${reportId}/comments/me`)
+export const addComment   = (reportId, content) => api.post(`/reports/${reportId}/comments`, { content })
+export const deleteComment = (commentId)        => api.delete(`/comments/${commentId}`)
+
+// ── Reviews ───────────────────────────────────────────────────────────────────
+export const getReviews  = (reportId)       => api.get(`/reports/${reportId}/reviews`)
+export const addReview   = (reportId, data) => api.post(`/reports/${reportId}/reviews`, data)
+export const deleteReview = (reviewId)      => api.delete(`/reviews/${reviewId}`)

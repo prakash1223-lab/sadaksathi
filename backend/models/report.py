@@ -35,5 +35,7 @@ class Report(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
-    reporter = relationship("User", back_populates="reports")
+    reporter      = relationship("User",         back_populates="reports")
     notifications = relationship("Notification", back_populates="report")
+    comments      = relationship("Comment",      back_populates="report", cascade="all, delete-orphan")
+    reviews       = relationship("Review",       back_populates="report", cascade="all, delete-orphan")
