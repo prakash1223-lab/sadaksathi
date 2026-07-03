@@ -224,8 +224,17 @@ export default function ReportDetail() {
               src={report.photo_url.startsWith('http') ? report.photo_url : `${API_BASE}${report.photo_url}`}
               alt={report.title}
               className="w-full h-full object-cover"
-              onError={e => { e.target.style.display='none' }}
+              onError={e => {
+                e.target.style.display = 'none'
+                e.target.nextSibling.style.display = 'flex'
+              }}
             />
+            {/* Fallback shown when image fails to load */}
+            <div className="w-full h-full bg-gray-100 items-center justify-center flex-col gap-2 text-gray-400"
+              style={{display:'none', position:'absolute', inset:0}}>
+              <span className="text-4xl">🖼️</span>
+              <p className="text-xs">Image unavailable</p>
+            </div>
             <div className="absolute top-3 left-3">
               <span className="text-xs font-bold px-3 py-1.5 rounded-full border shadow-sm"
                 style={{background:sev.bg, color:sev.text, borderColor:sev.border}}>

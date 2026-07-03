@@ -52,13 +52,53 @@ class ReportUpdate(BaseModel):
 # ── Helper: save upload ───────────────────────────────────────────────────────
 
 async def _save_upload(photo: UploadFile) -> tuple[str, str]:
-    """Save uploaded file, return (photo_url, local_path)."""
-    ext      = os.path.splitext(photo.filename)[1] or ".jpg"
+    """
+    Save uploaded file.
+    - If Cloudinary is configured: upload there, return (cloudinary_url, tmp_path).
+    - Otherwise: save locally, return (/uploads/filename, local_path).
+    The second return value is always a local tmp path usable by the AI classifier.
+    """
+    import tempfile
+
+    ext      = os.path.splitext(photo.filename)[1].lower() or ".jpg"
     filename = f"{uuid.uuid4()}{ext}"
-    path     = os.path.join(settings.UPLOAD_DIR, filename)
-    async with aiofiles.open(path, "wb") as f:
-        await f.write(await photo.read())
-    return f"/uploads/{filename}", path
+    contents = await photo.read()
+
+    # Always write to a temp file so the AI classifier can read it
+    tmp_path = os.path.join(tempfile.gettempdir(), filename)
+    with open(tmp_path, "wb") as f:
+        f.write(contents)
+
+    if settings.use_cloudinary:
+        try:
+            import cloudinary
+            import cloudinary.uploader
+
+            cloudinary.config(
+                cloud_name  = settings.CLOUDINARY_CLOUD_NAME,
+                api_key     = settings.CLOUDINARY_API_KEY,
+                api_secret  = settings.CLOUDINARY_API_SECRET,
+                secure      = True,
+            )
+            result = cloudinary.uploader.upload(
+                tmp_path,
+                folder          = "sadaksathi",
+                resource_type   = "image",
+                # Serve via HTTPS, auto-format + quality for speed
+                transformation  = [{"quality": "auto", "fetch_format": "auto"}],
+            )
+            photo_url = result["secure_url"]
+            print(f"[Cloudinary] Uploaded: {photo_url}")
+            return photo_url, tmp_path
+        except Exception as e:
+            print(f"[Cloudinary] Upload failed, falling back to local: {e}")
+
+    # Local fallback
+    local_path = os.path.join(settings.UPLOAD_DIR, filename)
+    os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+    with open(local_path, "wb") as f:
+        f.write(contents)
+    return f"/uploads/{filename}", local_path
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────

@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { upvoteReport } from '../api/reports'
 import { useAuth } from '../context/AuthContext'
 import { useState } from 'react'
+import { API_BASE } from '../api/client'
 
 const severityColor = {
   low: 'bg-yellow-100 text-yellow-800',
@@ -36,9 +37,10 @@ export default function ReportCard({ report, onUpvote }) {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
         {report.photo_url && (
           <img
-            src={report.photo_url}
+            src={report.photo_url.startsWith('http') ? report.photo_url : `${API_BASE}${report.photo_url}`}
             alt={report.title}
             className="w-full h-40 object-cover"
+            onError={e => { e.target.style.display = 'none' }}
           />
         )}
         <div className="p-4">
