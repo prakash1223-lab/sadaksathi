@@ -7,3 +7,18 @@
   z-index: 1;
 }
 
+/* Comments & Reviews collapsible expand animation */
+.comments-expand {
+  animation: expandDown 0.2s ease-out;
+}
+
+@keyframes expandDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

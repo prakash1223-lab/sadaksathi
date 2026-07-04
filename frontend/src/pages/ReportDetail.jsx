@@ -70,6 +70,7 @@ export default function ReportDetail() {
   const [toast,    setToast]    = useState(null)
 
   // ── comments state ──
+  const [showComments,       setShowComments]       = useState(false)
   const [activeTab,          setActiveTab]          = useState('comments')
   const [comments,           setComments]           = useState([])
   const [newComment,         setNewComment]         = useState('')
@@ -420,236 +421,276 @@ export default function ReportDetail() {
         )}
 
         {/* ══════════════════════════════════════════════
-            COMMENTS & REVIEWS TAB SECTION
+            COMMENTS & REVIEWS — COLLAPSIBLE
         ══════════════════════════════════════════════ */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-6">
 
-          {/* Tab bar */}
-          <div className="flex border-b border-gray-100">
-            <button
-              onClick={() => setActiveTab('comments')}
-              className={`flex-1 flex items-center justify-center gap-2 py-3.5 text-sm font-semibold transition-colors
-                ${activeTab === 'comments'
-                  ? 'text-red-600 border-b-2 border-red-600 bg-red-50/40'
-                  : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}`}>
-              💬 Comments
-              <span className={`text-xs px-2 py-0.5 rounded-full font-bold
-                ${activeTab === 'comments' ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500'}`}>
-                {comments.length}
-              </span>
-            </button>
-            <button
-              onClick={() => setActiveTab('reviews')}
-              className={`flex-1 flex items-center justify-center gap-2 py-3.5 text-sm font-semibold transition-colors
-                ${activeTab === 'reviews'
-                  ? 'text-red-600 border-b-2 border-red-600 bg-red-50/40'
-                  : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}`}>
-              ⭐ Reviews
-              <span className={`text-xs px-2 py-0.5 rounded-full font-bold
-                ${activeTab === 'reviews' ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500'}`}>
-                {reviews.length}
-              </span>
-            </button>
-          </div>
-
-          {/* ─── COMMENTS TAB ─────────────────────────────── */}
-          {activeTab === 'comments' && (
-            <div>
-              {/* Input box */}
-              {user ? (
-                <div className="p-4 border-b border-gray-100 bg-gray-50/50">
-                  <div className="flex gap-3">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
-                      style={{background: avatarCol(user.name || '')}}>
-                      {initials(user.name || '')}
-                    </div>
-                    <div className="flex-1">
-                      <textarea
-                        value={newComment}
-                        onChange={e => setNewComment(e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleAddComment() }}
-                        placeholder="Add a comment… e.g. Still not fixed! Road is getting worse."
-                        maxLength={500}
-                        rows={2}
-                        className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-400 bg-white transition-all"
-                      />
-                      <div className="flex items-center justify-between mt-1.5">
-                        <span className="text-xs text-gray-400">{newComment.length}/500</span>
-                        <button
-                          onClick={handleAddComment}
-                          disabled={!newComment.trim() || submittingComment}
-                          className="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-4 py-1.5 rounded-full disabled:opacity-50 transition-colors">
-                          {submittingComment ? 'Posting…' : 'Post'}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="p-4 border-b border-gray-100 text-center">
-                  <p className="text-sm text-gray-500">
-                    <button onClick={() => navigate('/login')} className="text-red-600 font-semibold hover:underline">Login</button>
-                    {' '}to join the conversation
-                  </p>
-                </div>
-              )}
-
-              {/* Comments list */}
-              <div className="divide-y divide-gray-50">
-                {comments.length === 0 ? (
-                  <div className="py-10 text-center">
-                    <p className="text-3xl mb-2">💬</p>
-                    <p className="text-sm text-gray-400 font-medium">No comments yet</p>
-                    <p className="text-xs text-gray-400 mt-1">Be the first to comment!</p>
-                  </div>
-                ) : comments.map(c => (
-                  <div key={c.id} className="comment-item flex items-start gap-3 px-4 py-3.5 hover:bg-gray-50/60 transition-colors">
-                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
-                      style={{background: avatarCol(c.user?.name || '')}}>
-                      {c.user?.avatar_initials || '?'}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2 mb-0.5">
-                        <p className="text-xs font-bold text-gray-800">{c.user?.name}</p>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <p className="text-xs text-gray-400">{c.time_ago}</p>
-                          {c.is_mine && (
-                            <button onClick={() => handleDeleteComment(c.id)}
-                              title="Delete comment"
-                              className="text-gray-300 hover:text-red-500 transition-colors text-sm leading-none">
-                              🗑️
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                      <p className="text-sm text-gray-700 leading-relaxed">{c.content}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+        {/* Toggle button */}
+        <button
+          onClick={() => setShowComments(s => !s)}
+          className="w-full bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4 flex items-center justify-between hover:bg-gray-50 active:scale-[0.99] transition-all mt-0 mb-2"
+        >
+          <div className="flex items-center gap-3">
+            <span className="w-9 h-9 bg-red-50 rounded-xl flex items-center justify-center text-base shrink-0">💬</span>
+            <div className="text-left">
+              <p className="text-sm font-semibold text-gray-800">Comments &amp; Reviews</p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {comments.length} comment{comments.length !== 1 ? 's' : ''}
+                {' · '}
+                {reviews.length} review{reviews.length !== 1 ? 's' : ''}
+                {avgRating > 0 ? ` · ⭐ ${avgRating.toFixed(1)}` : ''}
+              </p>
             </div>
-          )}
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-xs text-red-600 font-semibold">{showComments ? 'Hide' : 'Show'}</span>
+            <svg
+              className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${showComments ? 'rotate-180' : ''}`}
+              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </div>
+        </button>
 
-          {/* ─── REVIEWS TAB ──────────────────────────────── */}
-          {activeTab === 'reviews' && (
-            <div>
-              {/* Rating summary bar */}
-              {reviews.length > 0 && (
-                <div className="p-4 border-b border-gray-100 bg-yellow-50/40 flex items-center gap-5">
-                  <div className="text-center shrink-0">
-                    <p className="text-4xl font-extrabold text-gray-900 leading-none">{avgRating.toFixed(1)}</p>
-                    <Stars rating={Math.round(avgRating)} />
-                    <p className="text-xs text-gray-400 mt-1">{reviews.length} review{reviews.length !== 1 ? 's' : ''}</p>
-                  </div>
-                  {/* Mini bar chart */}
-                  <div className="flex-1 space-y-1">
-                    {[5,4,3,2,1].map(star => {
-                      const count = reviews.filter(r => r.rating === star).length
-                      const pct   = reviews.length ? Math.round((count / reviews.length) * 100) : 0
-                      return (
-                        <div key={star} className="flex items-center gap-2">
-                          <span className="text-xs text-gray-500 w-3 shrink-0">{star}</span>
-                          <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                            <div className="h-full bg-yellow-400 rounded-full transition-all duration-500"
-                              style={{width: `${pct}%`}}/>
-                          </div>
-                          <span className="text-xs text-gray-400 w-5 text-right">{count}</span>
+        {/* Collapsible content */}
+        {showComments && (
+          <div className="comments-expand bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-6">
+
+            {/* Tab bar */}
+            <div className="flex border-b border-gray-100">
+              <button
+                onClick={() => setActiveTab('comments')}
+                className={`flex-1 flex items-center justify-center gap-2 py-3.5 text-sm font-semibold transition-colors
+                  ${activeTab === 'comments'
+                    ? 'text-red-600 border-b-2 border-red-600 bg-red-50/40'
+                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}`}>
+                💬 Comments
+                <span className={`text-xs px-2 py-0.5 rounded-full font-bold
+                  ${activeTab === 'comments' ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500'}`}>
+                  {comments.length}
+                </span>
+              </button>
+              <button
+                onClick={() => setActiveTab('reviews')}
+                className={`flex-1 flex items-center justify-center gap-2 py-3.5 text-sm font-semibold transition-colors
+                  ${activeTab === 'reviews'
+                    ? 'text-red-600 border-b-2 border-red-600 bg-red-50/40'
+                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}`}>
+                ⭐ Reviews
+                <span className={`text-xs px-2 py-0.5 rounded-full font-bold
+                  ${activeTab === 'reviews' ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500'}`}>
+                  {reviews.length}
+                </span>
+              </button>
+            </div>
+
+            {/* ─── COMMENTS TAB ─────────────────────────────── */}
+            {activeTab === 'comments' && (
+              <div>
+                {/* Input box */}
+                {user ? (
+                  <div className="p-4 border-b border-gray-100 bg-gray-50/50">
+                    <div className="flex gap-3">
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
+                        style={{background: avatarCol(user.name || '')}}>
+                        {initials(user.name || '')}
+                      </div>
+                      <div className="flex-1">
+                        <textarea
+                          value={newComment}
+                          onChange={e => setNewComment(e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleAddComment() }}
+                          placeholder="Add a comment… e.g. Still not fixed! Road is getting worse."
+                          maxLength={500}
+                          rows={2}
+                          className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-400 bg-white transition-all"
+                        />
+                        <div className="flex items-center justify-between mt-1.5">
+                          <span className="text-xs text-gray-400">{newComment.length}/500</span>
+                          <button
+                            onClick={handleAddComment}
+                            disabled={!newComment.trim() || submittingComment}
+                            className="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-4 py-1.5 rounded-full disabled:opacity-50 transition-colors">
+                            {submittingComment ? 'Posting…' : 'Post'}
+                          </button>
                         </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Add review form — only for fixed reports, logged-in, not yet reviewed */}
-              {user && report?.status === 'fixed' && !hasReviewed && (
-                <div className="p-4 border-b border-gray-100 bg-gray-50/50">
-                  <p className="text-xs font-bold text-gray-700 uppercase tracking-wide mb-3">Rate this repair</p>
-                  <div className="flex items-center gap-3 mb-3">
-                    <Stars rating={newRating} interactive onSelect={setNewRating} />
-                    {newRating > 0 && (
-                      <span className="text-xs text-gray-500 font-medium">
-                        {['','Very bad 😞','Bad 😕','Okay 😐','Good 😊','Excellent! 🎉'][newRating]}
-                      </span>
-                    )}
-                  </div>
-                  <textarea
-                    value={newReview}
-                    onChange={e => setNewReview(e.target.value)}
-                    placeholder="How was the repair quality? (optional)"
-                    maxLength={300}
-                    rows={2}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-400 bg-white transition-all"
-                  />
-                  <button
-                    onClick={handleAddReview}
-                    disabled={newRating === 0 || submittingReview}
-                    className="mt-2 w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-sm disabled:opacity-50 transition-colors">
-                    {submittingReview ? 'Submitting…' : '⭐ Submit Review'}
-                  </button>
-                </div>
-              )}
-
-              {/* Already reviewed */}
-              {user && report?.status === 'fixed' && hasReviewed && (
-                <div className="p-4 border-b border-gray-100 flex items-center gap-2 text-sm text-green-700 bg-green-50/60">
-                  <span>✅</span> You've already reviewed this repair. Thank you!
-                </div>
-              )}
-
-              {/* Not fixed yet — info banner */}
-              {report?.status !== 'fixed' && (
-                <div className="p-4 border-b border-gray-100 flex items-center justify-center gap-2 text-sm text-gray-400 bg-gray-50/40">
-                  <span>🔒</span>
-                  <span>Reviews are unlocked once the road is marked as fixed</span>
-                </div>
-              )}
-
-              {/* Not logged in */}
-              {!user && report?.status === 'fixed' && (
-                <div className="p-4 border-b border-gray-100 text-center">
-                  <p className="text-sm text-gray-500">
-                    <button onClick={() => navigate('/login')} className="text-red-600 font-semibold hover:underline">Login</button>
-                    {' '}to leave a review
-                  </p>
-                </div>
-              )}
-
-              {/* Reviews list */}
-              <div className="divide-y divide-gray-50">
-                {reviews.length === 0 ? (
-                  <div className="py-10 text-center">
-                    <p className="text-3xl mb-2">⭐</p>
-                    <p className="text-sm text-gray-400 font-medium">No reviews yet</p>
-                    {report?.status === 'fixed' && (
-                      <p className="text-xs text-gray-400 mt-1">Be the first to review this repair!</p>
-                    )}
-                  </div>
-                ) : reviews.map(r => (
-                  <div key={r.id} className="comment-item flex items-start gap-3 px-4 py-3.5 hover:bg-gray-50/60 transition-colors">
-                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
-                      style={{background: avatarCol(r.user?.name || '')}}>
-                      {r.user?.avatar_initials || '?'}
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-xs font-bold text-gray-800">{r.user?.name}</p>
-                        <p className="text-xs text-gray-400 shrink-0">{r.time_ago}</p>
+                  </div>
+                ) : (
+                  <div className="p-4 border-b border-gray-100 text-center">
+                    <p className="text-sm text-gray-500">
+                      <button onClick={() => navigate('/login')} className="text-red-600 font-semibold hover:underline">Login</button>
+                      {' '}to join the conversation
+                    </p>
+                  </div>
+                )}
+
+                {/* Comments list */}
+                <div className="divide-y divide-gray-50">
+                  {comments.length === 0 ? (
+                    <div className="py-10 text-center">
+                      <p className="text-3xl mb-2">💬</p>
+                      <p className="text-sm text-gray-400 font-medium">No comments yet</p>
+                      <p className="text-xs text-gray-400 mt-1">Be the first to comment!</p>
+                    </div>
+                  ) : comments.map(c => (
+                    <div key={c.id}
+                      className="comment-item px-4 py-3 border-b border-gray-50 last:border-b-0 hover:bg-gray-50 transition-colors">
+                      <div className="flex items-start gap-3">
+                        {/* Avatar */}
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
+                          style={{background: avatarCol(c.user?.name || '')}}>
+                          {c.user?.avatar_initials || '?'}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          {/* Name + time row */}
+                          <div className="flex items-center justify-between gap-2 mb-1">
+                            <div className="flex items-center gap-2">
+                              <p className="text-xs font-bold text-gray-900">{c.user?.name}</p>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <p className="text-xs text-gray-400">{c.time_ago}</p>
+                              {c.is_mine && (
+                                <button
+                                  onClick={async () => {
+                                    if (!window.confirm('Delete this comment?')) return
+                                    try {
+                                      await deleteComment(c.id)
+                                      setComments(prev => prev.filter(x => x.id !== c.id))
+                                    } catch {}
+                                  }}
+                                  className="text-gray-300 hover:text-red-500 transition-colors p-1"
+                                  title="Delete comment">
+                                  🗑️
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          {/* Comment text */}
+                          <p className="text-sm text-gray-700 leading-relaxed">{c.content}</p>
+                        </div>
                       </div>
-                      <div className="my-0.5">
-                        <Stars rating={r.rating} />
-                      </div>
-                      {r.content && (
-                        <p className="text-sm text-gray-700 leading-relaxed mt-0.5">{r.content}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ─── REVIEWS TAB ──────────────────────────────── */}
+            {activeTab === 'reviews' && (
+              <div>
+                {/* Rating summary bar */}
+                {reviews.length > 0 && (
+                  <div className="p-4 border-b border-gray-100 bg-yellow-50/40 flex items-center gap-5">
+                    <div className="text-center shrink-0">
+                      <p className="text-4xl font-extrabold text-gray-900 leading-none">{avgRating.toFixed(1)}</p>
+                      <Stars rating={Math.round(avgRating)} />
+                      <p className="text-xs text-gray-400 mt-1">{reviews.length} review{reviews.length !== 1 ? 's' : ''}</p>
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      {[5,4,3,2,1].map(star => {
+                        const count = reviews.filter(r => r.rating === star).length
+                        const pct   = reviews.length ? Math.round((count / reviews.length) * 100) : 0
+                        return (
+                          <div key={star} className="flex items-center gap-2">
+                            <span className="text-xs text-gray-500 w-3 shrink-0">{star}</span>
+                            <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                              <div className="h-full bg-yellow-400 rounded-full transition-all duration-500"
+                                style={{width: `${pct}%`}}/>
+                            </div>
+                            <span className="text-xs text-gray-400 w-5 text-right">{count}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Add review form */}
+                {user && report?.status === 'fixed' && !hasReviewed && (
+                  <div className="p-4 border-b border-gray-100 bg-gray-50/50">
+                    <p className="text-xs font-bold text-gray-700 uppercase tracking-wide mb-3">Rate this repair</p>
+                    <div className="flex items-center gap-3 mb-3">
+                      <Stars rating={newRating} interactive onSelect={setNewRating} />
+                      {newRating > 0 && (
+                        <span className="text-xs text-gray-500 font-medium">
+                          {['','Very bad 😞','Bad 😕','Okay 😐','Good 😊','Excellent! 🎉'][newRating]}
+                        </span>
                       )}
                     </div>
+                    <textarea
+                      value={newReview}
+                      onChange={e => setNewReview(e.target.value)}
+                      placeholder="How was the repair quality? (optional)"
+                      maxLength={300}
+                      rows={2}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-400 bg-white transition-all"
+                    />
+                    <button
+                      onClick={handleAddReview}
+                      disabled={newRating === 0 || submittingReview}
+                      className="mt-2 w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-sm disabled:opacity-50 transition-colors">
+                      {submittingReview ? 'Submitting…' : '⭐ Submit Review'}
+                    </button>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
+                )}
 
-        </div>{/* end tab card */}
+                {user && report?.status === 'fixed' && hasReviewed && (
+                  <div className="p-4 border-b border-gray-100 flex items-center gap-2 text-sm text-green-700 bg-green-50/60">
+                    <span>✅</span> You've already reviewed this repair. Thank you!
+                  </div>
+                )}
+
+                {report?.status !== 'fixed' && (
+                  <div className="p-4 border-b border-gray-100 flex items-center justify-center gap-2 text-sm text-gray-400 bg-gray-50/40">
+                    <span>🔒</span>
+                    <span>Reviews are unlocked once the road is marked as fixed</span>
+                  </div>
+                )}
+
+                {!user && report?.status === 'fixed' && (
+                  <div className="p-4 border-b border-gray-100 text-center">
+                    <p className="text-sm text-gray-500">
+                      <button onClick={() => navigate('/login')} className="text-red-600 font-semibold hover:underline">Login</button>
+                      {' '}to leave a review
+                    </p>
+                  </div>
+                )}
+
+                {/* Reviews list */}
+                <div className="divide-y divide-gray-50">
+                  {reviews.length === 0 ? (
+                    <div className="py-10 text-center">
+                      <p className="text-3xl mb-2">⭐</p>
+                      <p className="text-sm text-gray-400 font-medium">No reviews yet</p>
+                      {report?.status === 'fixed' && (
+                        <p className="text-xs text-gray-400 mt-1">Be the first to review this repair!</p>
+                      )}
+                    </div>
+                  ) : reviews.map(r => (
+                    <div key={r.id} className="comment-item flex items-start gap-3 px-4 py-3.5 hover:bg-gray-50/60 transition-colors">
+                      <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
+                        style={{background: avatarCol(r.user?.name || '')}}>
+                        {r.user?.avatar_initials || '?'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-xs font-bold text-gray-800">{r.user?.name}</p>
+                          <p className="text-xs text-gray-400 shrink-0">{r.time_ago}</p>
+                        </div>
+                        <div className="my-0.5"><Stars rating={r.rating} /></div>
+                        {r.content && (
+                          <p className="text-sm text-gray-700 leading-relaxed mt-0.5">{r.content}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+          </div>
+        )}{/* end showComments */}
 
       </div>{/* end max-w container */}
     </div>
