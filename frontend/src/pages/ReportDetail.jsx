@@ -9,6 +9,7 @@ import {
 } from '../api/reports'
 import { useAuth } from '../context/AuthContext'
 import { API_BASE } from '../api/client'
+import api from '../api/client'
 import { timeAgo, formatDateTime } from '../utils/time'
 
 delete L.Icon.Default.prototype._getIconUrl
@@ -68,6 +69,7 @@ export default function ReportDetail() {
   const [upvoting, setUpvoting] = useState(false)
   const [upvoted,  setUpvoted]  = useState(false)
   const [toast,    setToast]    = useState(null)
+  const [deleteConfirm, setDeleteConfirm] = useState(false)
 
   // ── comments state ──
   const [showComments,       setShowComments]       = useState(false)
@@ -419,6 +421,58 @@ export default function ReportDetail() {
             to confirm this road problem
           </p>
         )}
+
+        {/* ── Delete Report ── */}
+        {(() => {
+          const canDelete = user && (
+            user.is_admin || report?.reporter_id === user.id
+          ) && (
+            user.is_admin || report?.status !== 'fixed'
+          )
+          if (!canDelete) return null
+          return (
+            <div className="mt-2 mb-4 pt-3 border-t border-gray-100">
+              {!deleteConfirm ? (
+                <button
+                  onClick={() => setDeleteConfirm(true)}
+                  className="flex items-center gap-2 text-sm text-gray-400 hover:text-red-500 font-medium transition-colors">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                  </svg>
+                  Delete this report
+                </button>
+              ) : (
+                <div className="bg-red-50 border border-red-100 rounded-2xl p-4">
+                  <p className="text-sm font-bold text-red-800 mb-1">Delete this report?</p>
+                  <p className="text-xs text-red-600 mb-4 leading-relaxed">
+                    This will permanently delete the report and all its comments. Cannot be undone.
+                  </p>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={async () => {
+                        try {
+                          await api.delete(`/reports/${report.id}`)
+                          showToast('Report deleted!')
+                          setTimeout(() => navigate('/map'), 1000)
+                        } catch (err) {
+                          setDeleteConfirm(false)
+                          showToast(err.response?.data?.detail || 'Delete failed')
+                        }
+                      }}
+                      className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-sm transition-colors">
+                      Yes, delete
+                    </button>
+                    <button
+                      onClick={() => setDeleteConfirm(false)}
+                      className="flex-1 border border-gray-200 text-gray-600 font-semibold py-2.5 rounded-xl text-sm hover:bg-gray-50 transition-colors">
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        })()}
 
         {/* ══════════════════════════════════════════════
             COMMENTS & REVIEWS — COLLAPSIBLE

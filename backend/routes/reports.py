@@ -239,14 +239,33 @@ def update_report(
     return report
 
 
-@router.delete("/{report_id}", status_code=204)
+@router.delete("/{report_id}", status_code=200)
 def delete_report(
     report_id: int,
     db: Session = Depends(get_db),
-    admin: User = Depends(get_current_admin),
+    current_user: User = Depends(get_current_user),
 ):
+    from models.upvote import Upvote
+    from models.comment import Comment
+    from models.notification import Notification
+
     report = db.query(Report).filter(Report.id == report_id).first()
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
+
+    # Ownership check
+    if not current_user.is_admin and report.reporter_id != current_user.id:
+        raise HTTPException(status_code=403, detail="You can only delete your own reports")
+
+    # Fixed reports are locked unless admin
+    if report.status == "fixed" and not current_user.is_admin:
+        raise HTTPException(status_code=400, detail="Fixed reports cannot be deleted")
+
+    # Manually remove related rows that don't cascade via SQLAlchemy
+    db.query(Upvote).filter(Upvote.report_id == report_id).delete()
+    db.query(Comment).filter(Comment.report_id == report_id).delete()
+    db.query(Notification).filter(Notification.report_id == report_id).delete()
+
     db.delete(report)
     db.commit()
+    return {"message": "Report deleted successfully"}

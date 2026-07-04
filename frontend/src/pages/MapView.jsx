@@ -8,6 +8,7 @@ import 'leaflet.markercluster/dist/MarkerCluster.css'
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css'
 import { useSettings } from '../context/SettingsContext'
 import { getReports, getHeatmap, upvoteReport } from '../api/reports'
+import api from '../api/client'
 import { getUnreadCount, getNotifications, markRead, markAllRead } from '../api/notifications'
 import { useAuth } from '../context/AuthContext'
 import { timeAgo } from '../utils/time'
@@ -566,29 +567,50 @@ export default function MapView() {
             </p>
           )}
 
-          {/* Row 3: confirmed + button */}
+          {/* Row 3: confirmed + buttons */}
           <div className="flex items-center justify-between pl-5">
             <span className="text-xs text-gray-400">
               👍 {r.upvotes || 0} confirmed
             </span>
-            {r.status === 'fixed' ? (
-              <span className="text-xs text-green-600 font-medium">✓ Resolved</span>
-            ) : isLoggedIn ? (
-              <button
-                onClick={async e => {
-                  e.stopPropagation()
-                  try {
-                    await upvoteReport(r.id)
-                    setAll(prev => prev.map(x =>
-                      x.id === r.id ? { ...x, upvotes: x.upvotes + 1 } : x
-                    ))
-                  } catch {}
-                }}
-                className="text-xs text-red-600 font-medium bg-red-50 hover:bg-red-100 px-2.5 py-1 rounded-full border border-red-100 transition-colors"
-              >
-                Upvote
-              </button>
-            ) : null}
+            <div className="flex items-center gap-1.5">
+              {r.status === 'fixed' ? (
+                <span className="text-xs text-green-600 font-medium">✓ Resolved</span>
+              ) : isLoggedIn ? (
+                <button
+                  onClick={async e => {
+                    e.stopPropagation()
+                    try {
+                      await upvoteReport(r.id)
+                      setAll(prev => prev.map(x =>
+                        x.id === r.id ? { ...x, upvotes: x.upvotes + 1 } : x
+                      ))
+                    } catch {}
+                  }}
+                  className="text-xs text-red-600 font-medium bg-red-50 hover:bg-red-100 px-2.5 py-1 rounded-full border border-red-100 transition-colors"
+                >
+                  Upvote
+                </button>
+              ) : null}
+              {/* Delete — only own non-fixed reports */}
+              {isLoggedIn && user?.id === r.reporter_id && r.status !== 'fixed' && (
+                <button
+                  onClick={async e => {
+                    e.stopPropagation()
+                    if (!window.confirm('Delete this report? This cannot be undone.')) return
+                    try {
+                      await api.delete(`/reports/${r.id}`)
+                      setAll(prev => prev.filter(x => x.id !== r.id))
+                    } catch (err) {
+                      alert(err.response?.data?.detail || 'Cannot delete this report')
+                    }
+                  }}
+                  title="Delete your report"
+                  className="text-gray-300 hover:text-red-500 transition-colors p-1 rounded hover:bg-red-50"
+                >
+                  🗑️
+                </button>
+              )}
+            </div>
           </div>
         </button>
       )
