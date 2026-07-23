@@ -171,6 +171,99 @@ function ConfidenceMeter({ confidence }) {
   )
 }
 
+/* ─── Address Autocomplete (OpenStreetMap Nominatim — free, no key) ─── */
+function AddressAutocomplete({ value, onChange, onSelect }) {
+  const [suggestions, setSuggestions] = useState([])
+  const [open, setOpen] = useState(false)
+  const [searching, setSearching] = useState(false)
+  const debounceRef = useRef(null)
+  const wrapRef = useRef(null)
+
+  // Close on outside click
+  useEffect(() => {
+    const h = e => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [])
+
+  const search = (q) => {
+    clearTimeout(debounceRef.current)
+    onChange(q)
+    if (q.length < 3) { setSuggestions([]); setOpen(false); return }
+    debounceRef.current = setTimeout(async () => {
+      setSearching(true)
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q + ' Nepal')}&format=json&addressdetails=1&limit=5`,
+          { headers: { 'Accept-Language': 'en' } }
+        )
+        const data = await res.json()
+        setSuggestions(data)
+        setOpen(data.length > 0)
+      } catch { setSuggestions([]) }
+      finally { setSearching(false) }
+    }, 400)
+  }
+
+  const pick = (item) => {
+    const name = item.display_name.split(',').slice(0, 3).join(', ')
+    const ll = { lat: parseFloat(item.lat), lng: parseFloat(item.lon) }
+    onSelect(name, ll)
+    setSuggestions([]); setOpen(false)
+  }
+
+  return (
+    <div className="relative" ref={wrapRef}>
+      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+        Address <span className="text-gray-400 font-normal normal-case">(optional — type to search)</span>
+      </label>
+      <div className="relative">
+        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm">📍</span>
+        <input
+          type="text"
+          value={value}
+          onChange={e => search(e.target.value)}
+          onFocus={() => suggestions.length > 0 && setOpen(true)}
+          placeholder="e.g. New Road, Kathmandu"
+          className="w-full border border-gray-200 rounded-xl pl-10 pr-8 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-400 transition-all bg-gray-50/50 hover:bg-white"
+          autoComplete="off"
+        />
+        {searching && (
+          <span className="absolute right-3 top-1/2 -translate-y-1/2">
+            <svg className="animate-spin w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+            </svg>
+          </span>
+        )}
+      </div>
+      {open && suggestions.length > 0 && (
+        <ul className="absolute z-[9999] mt-1 w-full bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden">
+          {suggestions.map((s, i) => {
+            const parts = s.display_name.split(',')
+            const main  = parts.slice(0, 2).join(', ')
+            const sub   = parts.slice(2, 4).join(', ')
+            return (
+              <li key={i}>
+                <button
+                  type="button"
+                  onMouseDown={() => pick(s)}
+                  className="w-full text-left px-4 py-3 hover:bg-red-50 transition-colors border-b border-gray-50 last:border-b-0">
+                  <p className="text-sm font-medium text-gray-800 truncate">📍 {main}</p>
+                  {sub && <p className="text-xs text-gray-400 truncate mt-0.5">{sub}</p>}
+                </button>
+              </li>
+            )
+          })}
+          <li className="px-3 py-1.5 bg-gray-50 border-t border-gray-100">
+            <p className="text-[10px] text-gray-400 text-right">© OpenStreetMap</p>
+          </li>
+        </ul>
+      )}
+    </div>
+  )
+}
+
 /* ─── Main Component ─── */
 
 export default function ReportForm() {
@@ -400,14 +493,10 @@ export default function ReportForm() {
             </div>
           )}
 
-          <div className="relative">
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Address <span className="text-gray-400 font-normal normal-case">(optional)</span></label>
-            <div className="relative">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm">📍</span>
-              <input type="text" value={address} onChange={e => setAddr(e.target.value)} placeholder="e.g. New Road, Kathmandu"
-                className="w-full border border-gray-200 rounded-xl pl-10 pr-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-400 transition-all bg-gray-50/50 hover:bg-white"/>
-            </div>
-          </div>
+          <AddressAutocomplete value={address} onChange={setAddr} onSelect={(name, ll) => {
+            setAddr(name)
+            if (ll) { setPosition(ll); setFly(ll) }
+          }} />
         </div>
       )}
 

@@ -50,6 +50,16 @@ function StatCard({ value, label, sub, color = 'text-red-600', icon }) {
 
 // ── Confirm modal ─────────────────────────────────────────────────────────────
 function ConfirmModal({ report, onConfirm, onCancel }) {
+  const [afterPhoto, setAfterPhoto] = useState(null)
+  const [preview, setPreview] = useState(null)
+
+  const handleFile = (e) => {
+    const f = e.target.files?.[0]
+    if (!f) return
+    setAfterPhoto(f)
+    setPreview(URL.createObjectURL(f))
+  }
+
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full">
@@ -57,9 +67,28 @@ function ConfirmModal({ report, onConfirm, onCancel }) {
         <p className="text-sm text-gray-500 mb-1">
           <span className="font-medium text-gray-700">{report.title}</span>
         </p>
-        <p className="text-xs text-gray-400 mb-5">This will mark the report as fixed and notify the reporter.</p>
+        <p className="text-xs text-gray-400 mb-4">This will mark the report as fixed and notify the reporter.</p>
+
+        {/* Optional after photo */}
+        <div className="mb-5">
+          <p className="text-xs font-semibold text-gray-700 mb-2">After photo <span className="font-normal text-gray-400">(optional — show the repair)</span></p>
+          {preview ? (
+            <div className="relative rounded-xl overflow-hidden border border-gray-200 mb-2" style={{height:120}}>
+              <img src={preview} alt="after" className="w-full h-full object-cover"/>
+              <button onClick={() => { setAfterPhoto(null); setPreview(null) }}
+                className="absolute top-2 right-2 bg-white/80 rounded-full w-6 h-6 flex items-center justify-center text-gray-600 hover:text-red-600 text-xs font-bold">✕</button>
+            </div>
+          ) : (
+            <label className="flex items-center justify-center gap-2 border-2 border-dashed border-gray-200 rounded-xl py-4 cursor-pointer hover:border-green-400 hover:bg-green-50 transition-colors">
+              <span className="text-xl">📸</span>
+              <span className="text-xs text-gray-500 font-medium">Upload after photo</span>
+              <input type="file" accept="image/*" className="hidden" onChange={handleFile}/>
+            </label>
+          )}
+        </div>
+
         <div className="flex gap-3">
-          <button onClick={onConfirm}
+          <button onClick={() => onConfirm(afterPhoto)}
             className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors">
             ✅ Yes, Mark Fixed
           </button>
@@ -110,10 +139,10 @@ export default function AdminDashboard() {
 
   useEffect(() => { fetchReports() }, [sevFilter, staFilter, sortBy, search, page])
 
-  const doStatusUpdate = async (report, status) => {
+  const doStatusUpdate = async (report, status, afterPhoto = null) => {
     setUpdating(report.id)
     try {
-      const res = await updateStatus(report.id, status)
+      const res = await updateStatus(report.id, status, afterPhoto)
       setReports(prev => prev.map(r => r.id === report.id ? res.data : r))
       if (stats) {
         getAdminStats().then(r => setStats(r.data))
@@ -156,7 +185,7 @@ export default function AdminDashboard() {
       {confirm && (
         <ConfirmModal
           report={confirm}
-          onConfirm={() => doStatusUpdate(confirm, 'fixed')}
+          onConfirm={(afterPhoto) => doStatusUpdate(confirm, 'fixed', afterPhoto)}
           onCancel={() => setConfirm(null)}
         />
       )}

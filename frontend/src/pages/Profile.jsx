@@ -1099,6 +1099,12 @@ export default function Profile() {
 
         {/* ═══ CARD 3 — My Reports (Collapsible) ═══ */}
         <motion.div variants={itemVariants}>
+          <div className="flex items-center justify-between mb-2 px-1">
+            <span className="text-xs text-gray-400 font-medium">Showing latest {Math.min(data.reports.length, 20)}</span>
+            <Link to="/my-reports" className="text-xs text-rose-600 font-semibold hover:underline flex items-center gap-1">
+              View all reports →
+            </Link>
+          </div>
           <CollapsibleSection
             icon={FileText}
             title="My Reports"

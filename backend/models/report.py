@@ -28,6 +28,7 @@ class Report(Base):
     status   = Column(String(20), nullable=False, default="pending")
     damage_type = Column(String, nullable=True)
     photo_url = Column(String, nullable=True)
+    after_photo_url = Column(String, nullable=True)   # uploaded by admin when marking fixed
     upvotes = Column(Integer, default=0)
     ai_confidence = Column(Float, nullable=True)
     fixed_at = Column(DateTime(timezone=True), nullable=True)

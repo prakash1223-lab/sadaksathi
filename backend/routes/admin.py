@@ -1,11 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Form
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc, asc
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime, timezone, timedelta
-import csv, io
+import csv, io, os, uuid, tempfile
 
 from core.database import get_db
 from core.security import get_current_admin
@@ -38,6 +38,7 @@ class AdminReportOut(BaseModel):
     damage_type: Optional[str]
     ai_confidence: Optional[float]
     photo_url: Optional[str]
+    after_photo_url: Optional[str]
     upvotes: int
     reporter: ReporterMin
     created_at: datetime
@@ -160,7 +161,8 @@ def admin_reports(
 @router.patch("/reports/{report_id}/status", response_model=AdminReportOut)
 def update_report_status(
     report_id: int,
-    body: StatusUpdateRequest,
+    status: StatusEnum = Form(...),
+    after_photo: Optional[UploadFile] = File(None),
     admin=Depends(get_current_admin),
     db: Session = Depends(get_db),
 ):
@@ -168,17 +170,43 @@ def update_report_status(
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
 
-    report.status = body.status
-    if body.status == StatusEnum.fixed and report.fixed_at is None:
+    report.status = status
+    if status == StatusEnum.fixed and report.fixed_at is None:
         report.fixed_at = datetime.now(timezone.utc)
+
+    # Save after/fixed photo if provided
+    if after_photo and after_photo.filename:
+        try:
+            import base64, io as _io
+            from PIL import Image as PILImage
+            contents = after_photo.file.read()
+            ext = (os.path.splitext(after_photo.filename)[1] or ".jpg").lower().lstrip(".")
+            # Resize to max 800px
+            try:
+                img = PILImage.open(_io.BytesIO(contents))
+                if img.mode in ("RGBA", "P"):
+                    img = img.convert("RGB")
+                if img.width > 800:
+                    ratio = 800 / img.width
+                    img = img.resize((800, int(img.height * ratio)), PILImage.LANCZOS)
+                buf = _io.BytesIO()
+                img.save(buf, format="JPEG", quality=82)
+                contents = buf.getvalue()
+                ext = "jpg"
+            except Exception as e:
+                print(f"[AfterPhoto] PIL error: {e}")
+            b64 = base64.b64encode(contents).decode("utf-8")
+            report.after_photo_url = f"data:image/jpeg;base64,{b64}"
+        except Exception as e:
+            print(f"[AfterPhoto] Save error (non-fatal): {e}")
 
     # Create notification for reporter
     loc = report.address or f"{report.latitude:.4f}, {report.longitude:.4f}"
-    if body.status == StatusEnum.in_progress:
+    if status == StatusEnum.in_progress:
         create_notification(db, report.reporter_id, report.id,
             "status_in_progress",
             f"🔧 Good news! Municipality is working on the road you reported on {loc}")
-    elif body.status == StatusEnum.fixed:
+    elif status == StatusEnum.fixed:
         create_notification(db, report.reporter_id, report.id,
             "status_fixed",
             f"✅ Great news! The road you reported on {loc} has been fixed! Thank you 🙏")

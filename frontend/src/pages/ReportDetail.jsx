@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { MapContainer, TileLayer, Marker } from 'react-leaflet'
 import L from 'leaflet'
@@ -55,6 +55,76 @@ function Stars({ rating, interactive = false, onSelect }) {
           {s <= rating ? '⭐' : '☆'}
         </button>
       ))}
+    </div>
+  )
+}
+
+// ── Before / After slider ─────────────────────────────────────────────────────
+function BeforeAfterSlider({ before, after, sev }) {
+  const [pos, setPos] = useState(50)
+  const [dragging, setDragging] = useState(false)
+  const containerRef = useRef(null)
+
+  const toUrl = src =>
+    src.startsWith('data:') || src.startsWith('http') ? src : `${API_BASE}${src}`
+
+  const move = (clientX) => {
+    if (!containerRef.current) return
+    const rect = containerRef.current.getBoundingClientRect()
+    const pct = Math.min(100, Math.max(0, ((clientX - rect.left) / rect.width) * 100))
+    setPos(pct)
+  }
+
+  const onMouseDown = () => setDragging(true)
+  const onMouseMove = e => { if (dragging) move(e.clientX) }
+  const onMouseUp   = () => setDragging(false)
+  const onTouchMove = e => move(e.touches[0].clientX)
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative rounded-2xl overflow-hidden shadow-md select-none cursor-col-resize"
+      style={{height:260}}
+      onMouseMove={onMouseMove}
+      onMouseUp={onMouseUp}
+      onMouseLeave={onMouseUp}
+      onTouchMove={onTouchMove}
+    >
+      {/* After photo (full) */}
+      <img src={toUrl(after)} alt="After repair" className="absolute inset-0 w-full h-full object-cover"/>
+
+      {/* Before photo (clipped) */}
+      <div className="absolute inset-0 overflow-hidden" style={{width:`${pos}%`}}>
+        <img src={toUrl(before)} alt="Before repair" className="absolute inset-0 h-full object-cover" style={{width: containerRef.current?.offsetWidth || 400}}/>
+      </div>
+
+      {/* Divider */}
+      <div className="absolute top-0 bottom-0 w-0.5 bg-white shadow-lg" style={{left:`${pos}%`}}>
+        <div
+          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 h-8 bg-white rounded-full shadow-xl flex items-center justify-center cursor-col-resize"
+          onMouseDown={onMouseDown}
+          onTouchStart={() => setDragging(true)}
+        >
+          <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8 9l-3 3 3 3M16 9l3 3-3 3"/>
+          </svg>
+        </div>
+      </div>
+
+      {/* Labels */}
+      <span className="absolute top-3 left-3 text-xs font-bold px-3 py-1.5 rounded-full border shadow-sm"
+        style={{background:sev.bg, color:sev.text, borderColor:sev.border}}>
+        {sev.label}
+      </span>
+      <span className="absolute top-3 left-3 mt-8 text-xs font-bold px-2.5 py-1 rounded-full bg-black/40 text-white backdrop-blur-sm">
+        Before
+      </span>
+      <span className="absolute top-3 right-3 text-xs font-bold px-2.5 py-1 rounded-full bg-green-600/90 text-white backdrop-blur-sm">
+        ✅ After repair
+      </span>
+      <span className="absolute bottom-3 left-1/2 -translate-x-1/2 text-xs text-white/80 bg-black/40 px-3 py-1 rounded-full backdrop-blur-sm">
+        ← Drag to compare →
+      </span>
     </div>
   )
 }
@@ -221,33 +291,48 @@ export default function ReportDetail() {
       <div className="max-w-3xl mx-auto px-4 py-6">
 
         {/* ── Photo ── */}
-        {report.photo_url && (
-          <div className="relative rounded-2xl overflow-hidden mb-5 shadow-md" style={{height:260}}>
-            <img
-              src={
-                report.photo_url.startsWith('data:') || report.photo_url.startsWith('http')
-                  ? report.photo_url
-                  : `${API_BASE}${report.photo_url}`
-              }
-              alt={report.title}
-              className="w-full h-full object-cover"
-              onError={e => {
-                e.target.style.display = 'none'
-                e.target.nextSibling.style.display = 'flex'
-              }}
-            />
-            {/* Fallback shown when image fails to load */}
-            <div className="w-full h-full bg-gray-100 items-center justify-center flex-col gap-2 text-gray-400"
-              style={{display:'none', position:'absolute', inset:0}}>
-              <span className="text-4xl">🖼️</span>
-              <p className="text-xs">Image unavailable</p>
-            </div>
-            <div className="absolute top-3 left-3">
-              <span className="text-xs font-bold px-3 py-1.5 rounded-full border shadow-sm"
-                style={{background:sev.bg, color:sev.text, borderColor:sev.border}}>
-                {sev.label}
-              </span>
-            </div>
+        {(report.photo_url || report.after_photo_url) && (
+          <div className="mb-5">
+            {/* Before/After toggle if both exist */}
+            {report.photo_url && report.after_photo_url ? (
+              <BeforeAfterSlider
+                before={report.photo_url}
+                after={report.after_photo_url}
+                sev={sev}
+              />
+            ) : (
+              <div className="relative rounded-2xl overflow-hidden shadow-md" style={{height:260}}>
+                <img
+                  src={
+                    (report.photo_url || report.after_photo_url).startsWith('data:') ||
+                    (report.photo_url || report.after_photo_url).startsWith('http')
+                      ? (report.photo_url || report.after_photo_url)
+                      : `${API_BASE}${report.photo_url || report.after_photo_url}`
+                  }
+                  alt={report.title}
+                  className="w-full h-full object-cover"
+                  onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex' }}
+                />
+                <div className="w-full h-full bg-gray-100 items-center justify-center flex-col gap-2 text-gray-400"
+                  style={{display:'none', position:'absolute', inset:0}}>
+                  <span className="text-4xl">🖼️</span>
+                  <p className="text-xs">Image unavailable</p>
+                </div>
+                <div className="absolute top-3 left-3">
+                  <span className="text-xs font-bold px-3 py-1.5 rounded-full border shadow-sm"
+                    style={{background:sev.bg, color:sev.text, borderColor:sev.border}}>
+                    {sev.label}
+                  </span>
+                </div>
+                {report.after_photo_url && !report.photo_url && (
+                  <div className="absolute top-3 right-3">
+                    <span className="text-xs font-bold px-3 py-1.5 rounded-full border shadow-sm bg-green-50 text-green-700 border-green-200">
+                      ✅ After repair
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 

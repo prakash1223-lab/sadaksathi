@@ -8,6 +8,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import AdminDashboard from './pages/AdminDashboard'
 import Profile from './pages/Profile'
+import MyReports from './pages/MyReports'
 import Leaderboard from './pages/Leaderboard'
 import Settings from './pages/Settings'
 import { useAuth } from './context/AuthContext'
@@ -34,7 +35,7 @@ function GuestRoute({ children }) {
 }
 
 // Pages with their own full-screen layout (no shared Navbar)
-const STANDALONE = ['/login', '/register', '/map', '/admin', '/']
+const STANDALONE = ['/login', '/register', '/map', '/admin', '/', '/my-reports']
 
 export default function App() {
   const location = useLocation()
@@ -57,6 +58,7 @@ export default function App() {
         {/* Protected */}
         <Route path="/report/new" element={<ProtectedRoute><ReportForm /></ProtectedRoute>} />
         <Route path="/profile"    element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/my-reports" element={<ProtectedRoute><MyReports /></ProtectedRoute>} />
         <Route path="/settings"   element={<ProtectedRoute><Settings /></ProtectedRoute>} />
         <Route path="/admin"      element={<AdminRoute><AdminDashboard /></AdminRoute>} />
 

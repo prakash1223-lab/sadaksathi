@@ -35,6 +35,7 @@ class ReportOut(BaseModel):
     status: StatusEnum
     damage_type: Optional[str]
     photo_url: Optional[str]
+    after_photo_url: Optional[str]
     upvotes: int
     ai_confidence: Optional[float]
     reporter_id: int
