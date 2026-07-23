@@ -62,6 +62,30 @@ async def startup():
     """Create DB tables and print startup info."""
     try:
         Base.metadata.create_all(bind=engine)
+
+        # ── Safe column migrations ──────────────────────────────────────────
+        # Add any columns that may not exist in older deployed DBs.
+        from sqlalchemy import text
+        from core.database import SessionLocal
+        db = SessionLocal()
+        try:
+            migrations = [
+                # Feature: before/after photo on fixed reports
+                "ALTER TABLE reports ADD COLUMN IF NOT EXISTS after_photo_url TEXT",
+                # Feature: comments table (already created via create_all but just in case)
+                # Feature: reviews table (already created via create_all but just in case)
+            ]
+            for sql in migrations:
+                try:
+                    db.execute(text(sql))
+                    db.commit()
+                except Exception as col_err:
+                    db.rollback()
+                    print(f"   Migration skipped (already applied or not needed): {col_err}")
+        finally:
+            db.close()
+        # ────────────────────────────────────────────────────────────────────
+
         print("=" * 50)
         print("🛣️  SadakSathi API started!")
         db_display = settings.DATABASE_URL[:30] + "..." if len(settings.DATABASE_URL) > 30 else settings.DATABASE_URL
