@@ -28,6 +28,7 @@ app.add_middleware(
         "https://sadaksathi-production.up.railway.app",
         "https://sadaksathi-production-8abd.up.railway.app",
         "https://sadaksathi-v1k9-three.vercel.app",
+        "https://sadaksathi.onrender.com",
     ],
     allow_credentials=True,
     allow_methods=["*"],
